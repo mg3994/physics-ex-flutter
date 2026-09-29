@@ -70,7 +70,7 @@ class _MolecularSandboxSceneState extends State<MolecularSandboxScene> with Sing
       if (touchPoint != null) {
         double dist = p.position.distanceTo(touchPoint!);
         if (dist < 180.0 && dist > 1.0) {
-          Vector2D dir = (p.position - touchPoint!).normalized;
+          Vector2D dir = (p.position - touchPoint!).normalized();
           double force = (180.0 - dist) * (attractMode ? -15.0 : 25.0);
           p.velocity = p.velocity + dir * (force * 0.016);
         }
