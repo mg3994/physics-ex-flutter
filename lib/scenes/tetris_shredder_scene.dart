@@ -1,12 +1,9 @@
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import '../physics/physics_engine.dart';
-import '../physics/tetris_factory.dart';
-import '../physics/rigid_polygon.dart';
-import '../physics/particle_and_gear.dart';
+import '../physics/voxel_physics.dart';
 import '../physics/vector2d.dart';
-import '../widgets/physics_painter.dart';
+import '../widgets/voxel_painter.dart';
 import '../widgets/control_panel.dart';
 
 class TetrisShredderScene extends StatefulWidget {
@@ -17,9 +14,9 @@ class TetrisShredderScene extends StatefulWidget {
 }
 
 class _TetrisShredderSceneState extends State<TetrisShredderScene> with SingleTickerProviderStateMixin {
-  late PhysicsEngine engine;
+  late VoxelPhysicsEngine engine;
   late AnimationController _ticker;
-  double gravityY = 450.0;
+  double gravityY = 400.0;
   double gearSpeed = 5.0;
   bool isPaused = false;
   Timer? _autoSpawnTimer;
@@ -28,36 +25,16 @@ class _TetrisShredderSceneState extends State<TetrisShredderScene> with SingleTi
   @override
   void initState() {
     super.initState();
-    engine = PhysicsEngine(gravity: Vector2D(0, gravityY));
+    engine = VoxelPhysicsEngine(gravity: Vector2D(0, gravityY));
     _ticker = AnimationController(vsync: this, duration: const Duration(seconds: 1))
       ..repeat();
     _ticker.addListener(_onTick);
 
-    _setupSceneGears();
-
-    _autoSpawnTimer = Timer.periodic(const Duration(milliseconds: 1400), (_) {
+    _autoSpawnTimer = Timer.periodic(const Duration(milliseconds: 1200), (_) {
       if (autoSpawn && !isPaused) {
         _spawnRandomBlock();
       }
     });
-  }
-
-  void _setupSceneGears() {
-    engine.gears.clear();
-    engine.gears.add(ShredderGear(
-      center: Vector2D(220, 380),
-      radius: 65,
-      teethCount: 10,
-      rotationSpeed: gearSpeed,
-      clockwise: true,
-    ));
-    engine.gears.add(ShredderGear(
-      center: Vector2D(350, 380),
-      radius: 65,
-      teethCount: 10,
-      rotationSpeed: gearSpeed,
-      clockwise: false,
-    ));
   }
 
   void _onTick() {
@@ -70,9 +47,9 @@ class _TetrisShredderSceneState extends State<TetrisShredderScene> with SingleTi
 
   void _spawnRandomBlock([Vector2D? customPos]) {
     final rand = math.Random();
-    TetrisShapeType type = TetrisShapeType.values[rand.nextInt(TetrisShapeType.values.length)];
-    Vector2D spawnPos = customPos ?? Vector2D(220.0 + rand.nextDouble() * 130.0, 40.0);
-    engine.bodies.add(TetrisFactory.createTetrisBlock(type, spawnPos));
+    TetrisType type = TetrisType.values[rand.nextInt(TetrisType.values.length)];
+    Vector2D spawnPos = customPos ?? Vector2D(engine.boundsWidth * 0.35 + rand.nextDouble() * (engine.boundsWidth * 0.3), 30.0);
+    engine.spawnTetrisBlock(type, spawnPos);
   }
 
   @override
@@ -91,9 +68,24 @@ class _TetrisShredderSceneState extends State<TetrisShredderScene> with SingleTi
 
         double centerX = constraints.maxWidth / 2;
         double centerY = constraints.maxHeight * 0.52;
-        if (engine.gears.length == 2) {
-          engine.gears[0].center = Vector2D(centerX - 62, centerY);
-          engine.gears[1].center = Vector2D(centerX + 62, centerY);
+        if (engine.gears.isEmpty) {
+          engine.gears.add(Gear(
+            center: Vector2D(centerX - 55, centerY),
+            radius: 50,
+            teethCount: 10,
+            rotationSpeed: gearSpeed,
+            clockwise: true,
+          ));
+          engine.gears.add(Gear(
+            center: Vector2D(centerX + 55, centerY),
+            radius: 50,
+            teethCount: 10,
+            rotationSpeed: gearSpeed,
+            clockwise: false,
+          ));
+        } else {
+          engine.gears[0].center = Vector2D(centerX - 55, centerY);
+          engine.gears[1].center = Vector2D(centerX + 55, centerY);
         }
 
         return GestureDetector(
@@ -113,7 +105,7 @@ class _TetrisShredderSceneState extends State<TetrisShredderScene> with SingleTi
               ),
               CustomPaint(
                 size: Size(constraints.maxWidth, constraints.maxHeight),
-                painter: PhysicsPainter(engine: engine),
+                painter: VoxelPainter(engine: engine),
               ),
               Positioned(
                 top: 16,
@@ -160,12 +152,7 @@ class _TetrisShredderSceneState extends State<TetrisShredderScene> with SingleTi
                     });
                   },
                   onSpawnBlock: () => _spawnRandomBlock(),
-                  onClearAll: () {
-                    setState(() {
-                      engine.bodies.clear();
-                      engine.particles.clear();
-                    });
-                  },
+                  onClearAll: () => setState(() => engine.clearAll()),
                   onTogglePause: () => setState(() => isPaused = !isPaused),
                   isPaused: isPaused,
                 ),

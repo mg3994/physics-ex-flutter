@@ -1,12 +1,9 @@
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import '../physics/physics_engine.dart';
-import '../physics/tetris_factory.dart';
-import '../physics/rigid_polygon.dart';
-import '../physics/particle_and_gear.dart';
+import '../physics/voxel_physics.dart';
 import '../physics/vector2d.dart';
-import '../widgets/physics_painter.dart';
+import '../widgets/voxel_painter.dart';
 import '../widgets/control_panel.dart';
 
 class LavaMeltScene extends StatefulWidget {
@@ -17,9 +14,9 @@ class LavaMeltScene extends StatefulWidget {
 }
 
 class _LavaMeltSceneState extends State<LavaMeltScene> with SingleTickerProviderStateMixin {
-  late PhysicsEngine engine;
+  late VoxelPhysicsEngine engine;
   late AnimationController _ticker;
-  double gravityY = 480.0;
+  double gravityY = 450.0;
   double gearSpeed = 7.0;
   bool isPaused = false;
   Timer? _autoSpawnTimer;
@@ -28,12 +25,12 @@ class _LavaMeltSceneState extends State<LavaMeltScene> with SingleTickerProvider
   @override
   void initState() {
     super.initState();
-    engine = PhysicsEngine(gravity: Vector2D(0, gravityY));
+    engine = VoxelPhysicsEngine(gravity: Vector2D(0, gravityY));
     _ticker = AnimationController(vsync: this, duration: const Duration(seconds: 1))
       ..repeat();
     _ticker.addListener(_onTick);
 
-    _autoSpawnTimer = Timer.periodic(const Duration(milliseconds: 1100), (_) {
+    _autoSpawnTimer = Timer.periodic(const Duration(milliseconds: 1000), (_) {
       if (autoSpawn && !isPaused) {
         _spawnRandomBlock();
       }
@@ -44,54 +41,15 @@ class _LavaMeltSceneState extends State<LavaMeltScene> with SingleTickerProvider
     if (!isPaused) {
       setState(() {
         engine.update(0.016);
-        _processLavaMelting();
       });
-    }
-  }
-
-  void _processLavaMelting() {
-    double lavaLevel = engine.boundsHeight - 80.0;
-    List<int> toRemove = [];
-    final rand = math.Random();
-
-    for (int i = 0; i < engine.bodies.length; i++) {
-      var body = engine.bodies[i];
-      if (body.position.y > lavaLevel - 30.0) {
-        toRemove.add(i);
-
-        for (int p = 0; p < 25; p++) {
-          double pAngle = -math.pi * 0.85 + rand.nextDouble() * math.pi * 0.7;
-          double pSpeed = 80.0 + rand.nextDouble() * 160.0;
-          Color lavaColor = Color.lerp(
-            const Color(0xFFFF4500),
-            const Color(0xFFFFD700),
-            rand.nextDouble(),
-          )!;
-
-          engine.particles.add(Particle(
-            position: Vector2D(body.position.x + (rand.nextDouble() - 0.5) * 30, body.position.y),
-            velocity: Vector2D(math.cos(pAngle) * pSpeed, math.sin(pAngle) * pSpeed),
-            color: lavaColor,
-            radius: 3.5 + rand.nextDouble() * 4.0,
-            maxLife: 1.2 + rand.nextDouble() * 0.8,
-            isLava: true,
-          ));
-        }
-      }
-    }
-
-    for (int idx in toRemove.reversed) {
-      if (idx < engine.bodies.length) {
-        engine.bodies.removeAt(idx);
-      }
     }
   }
 
   void _spawnRandomBlock([Vector2D? customPos]) {
     final rand = math.Random();
-    TetrisShapeType type = TetrisShapeType.values[rand.nextInt(TetrisShapeType.values.length)];
+    TetrisType type = TetrisType.values[rand.nextInt(TetrisType.values.length)];
     Vector2D spawnPos = customPos ?? Vector2D(engine.boundsWidth * 0.35 + rand.nextDouble() * (engine.boundsWidth * 0.3), 30.0);
-    engine.bodies.add(TetrisFactory.createTetrisBlock(type, spawnPos));
+    engine.spawnTetrisBlock(type, spawnPos);
   }
 
   @override
@@ -109,25 +67,25 @@ class _LavaMeltSceneState extends State<LavaMeltScene> with SingleTickerProvider
         engine.boundsHeight = constraints.maxHeight;
 
         double centerX = constraints.maxWidth / 2;
-        double centerY = constraints.maxHeight * 0.55;
+        double centerY = constraints.maxHeight * 0.50;
         if (engine.gears.isEmpty) {
-          engine.gears.add(ShredderGear(
-            center: Vector2D(centerX - 60, centerY),
-            radius: 65,
+          engine.gears.add(Gear(
+            center: Vector2D(centerX - 55, centerY),
+            radius: 50,
             teethCount: 10,
             rotationSpeed: gearSpeed,
             clockwise: true,
           ));
-          engine.gears.add(ShredderGear(
-            center: Vector2D(centerX + 60, centerY),
-            radius: 65,
+          engine.gears.add(Gear(
+            center: Vector2D(centerX + 55, centerY),
+            radius: 50,
             teethCount: 10,
             rotationSpeed: gearSpeed,
             clockwise: false,
           ));
         } else {
-          engine.gears[0].center = Vector2D(centerX - 60, centerY);
-          engine.gears[1].center = Vector2D(centerX + 60, centerY);
+          engine.gears[0].center = Vector2D(centerX - 55, centerY);
+          engine.gears[1].center = Vector2D(centerX + 55, centerY);
         }
 
         return GestureDetector(
@@ -147,7 +105,7 @@ class _LavaMeltSceneState extends State<LavaMeltScene> with SingleTickerProvider
               ),
               CustomPaint(
                 size: Size(constraints.maxWidth, constraints.maxHeight),
-                painter: PhysicsPainter(engine: engine),
+                painter: VoxelPainter(engine: engine),
               ),
               Positioned(
                 bottom: 0,
@@ -216,12 +174,7 @@ class _LavaMeltSceneState extends State<LavaMeltScene> with SingleTickerProvider
                     });
                   },
                   onSpawnBlock: () => _spawnRandomBlock(),
-                  onClearAll: () {
-                    setState(() {
-                      engine.bodies.clear();
-                      engine.particles.clear();
-                    });
-                  },
+                  onClearAll: () => setState(() => engine.clearAll()),
                   onTogglePause: () => setState(() => isPaused = !isPaused),
                   isPaused: isPaused,
                 ),

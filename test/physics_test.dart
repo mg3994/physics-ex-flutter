@@ -1,11 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:physics_simulations/physics/vector2d.dart';
-import 'package:physics_simulations/physics/rigid_polygon.dart';
-import 'package:physics_simulations/physics/tetris_factory.dart';
-import 'package:physics_simulations/physics/physics_engine.dart';
+import 'package:physics_simulations/physics/voxel_physics.dart';
 
 void main() {
-  group('Physics Engine Unit Tests', () {
+  group('Voxel Physics Engine Unit Tests', () {
     test('Vector2D math operations', () {
       final v1 = Vector2D(3, 4);
       final v2 = Vector2D(1, 2);
@@ -16,18 +14,20 @@ void main() {
       expect(v1.dot(v2), 11.0);
     });
 
-    test('Tetris block creation', () {
-      final block = TetrisFactory.createTetrisBlock(TetrisShapeType.T, Vector2D(100, 100));
-      expect(block.shapeType, TetrisShapeType.T);
-      expect(block.position.x, 100.0);
-      expect(block.localVertices.isNotEmpty, true);
+    test('Voxel Tetris block spawn', () {
+      final engine = VoxelPhysicsEngine(boundsWidth: 500, boundsHeight: 500);
+      engine.spawnTetrisBlock(TetrisType.T, Vector2D(100, 100));
+
+      expect(engine.blocks.length, 1);
+      expect(engine.blocks.first.shapeType, TetrisType.T);
+      expect(engine.blocks.first.voxels.isNotEmpty, true);
     });
 
     test('Physics engine integration step', () {
-      final engine = PhysicsEngine(boundsWidth: 500, boundsHeight: 500);
-      final block = TetrisFactory.createTetrisBlock(TetrisShapeType.I, Vector2D(100, 100));
+      final engine = VoxelPhysicsEngine(boundsWidth: 500, boundsHeight: 500);
+      engine.spawnTetrisBlock(TetrisType.I, Vector2D(100, 100));
 
-      engine.bodies.add(block);
+      final block = engine.blocks.first;
       engine.update(0.1);
 
       expect(block.position.y > 100.0, true);

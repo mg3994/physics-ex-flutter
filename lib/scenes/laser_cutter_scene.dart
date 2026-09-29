@@ -1,12 +1,9 @@
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import '../physics/physics_engine.dart';
-import '../physics/tetris_factory.dart';
-import '../physics/rigid_polygon.dart';
-import '../physics/particle_and_gear.dart';
+import '../physics/voxel_physics.dart';
 import '../physics/vector2d.dart';
-import '../widgets/physics_painter.dart';
+import '../widgets/voxel_painter.dart';
 import '../widgets/control_panel.dart';
 
 class LaserCutterScene extends StatefulWidget {
@@ -17,24 +14,24 @@ class LaserCutterScene extends StatefulWidget {
 }
 
 class _LaserCutterSceneState extends State<LaserCutterScene> with SingleTickerProviderStateMixin {
-  late PhysicsEngine engine;
+  late VoxelPhysicsEngine engine;
   late AnimationController _ticker;
   double gravityY = 400.0;
   bool laserActive = true;
   bool isPaused = false;
   Timer? _autoSpawnTimer;
   bool autoSpawn = true;
-  double laserYPercent = 0.45;
+  double laserYPercent = 0.40;
 
   @override
   void initState() {
     super.initState();
-    engine = PhysicsEngine(gravity: Vector2D(0, gravityY));
+    engine = VoxelPhysicsEngine(gravity: Vector2D(0, gravityY));
     _ticker = AnimationController(vsync: this, duration: const Duration(seconds: 1))
       ..repeat();
     _ticker.addListener(_onTick);
 
-    _autoSpawnTimer = Timer.periodic(const Duration(milliseconds: 1200), (_) {
+    _autoSpawnTimer = Timer.periodic(const Duration(milliseconds: 1100), (_) {
       if (autoSpawn && !isPaused) {
         _spawnRandomBlock();
       }
@@ -51,9 +48,9 @@ class _LaserCutterSceneState extends State<LaserCutterScene> with SingleTickerPr
 
   void _spawnRandomBlock([Vector2D? customPos]) {
     final rand = math.Random();
-    TetrisShapeType type = TetrisShapeType.values[rand.nextInt(TetrisShapeType.values.length)];
-    Vector2D spawnPos = customPos ?? Vector2D(engine.boundsWidth * 0.3 + rand.nextDouble() * (engine.boundsWidth * 0.4), 30.0);
-    engine.bodies.add(TetrisFactory.createTetrisBlock(type, spawnPos));
+    TetrisType type = TetrisType.values[rand.nextInt(TetrisType.values.length)];
+    Vector2D spawnPos = customPos ?? Vector2D(engine.boundsWidth * 0.35 + rand.nextDouble() * (engine.boundsWidth * 0.3), 30.0);
+    engine.spawnTetrisBlock(type, spawnPos);
   }
 
   @override
@@ -72,7 +69,7 @@ class _LaserCutterSceneState extends State<LaserCutterScene> with SingleTickerPr
 
         double laserY = constraints.maxHeight * laserYPercent;
         engine.lasers = [
-          LaserCutLine(
+          Laser(
             start: Vector2D(20, laserY),
             end: Vector2D(constraints.maxWidth - 20, laserY),
             color: const Color(0xFFFF0055),
@@ -97,7 +94,7 @@ class _LaserCutterSceneState extends State<LaserCutterScene> with SingleTickerPr
               ),
               CustomPaint(
                 size: Size(constraints.maxWidth, constraints.maxHeight),
-                painter: PhysicsPainter(engine: engine, showGears: false),
+                painter: VoxelPainter(engine: engine),
               ),
               Positioned(
                 left: 12,
@@ -163,12 +160,7 @@ class _LaserCutterSceneState extends State<LaserCutterScene> with SingleTickerPr
                   laserActive: laserActive,
                   onLaserActiveChanged: (val) => setState(() => laserActive = val),
                   onSpawnBlock: () => _spawnRandomBlock(),
-                  onClearAll: () {
-                    setState(() {
-                      engine.bodies.clear();
-                      engine.particles.clear();
-                    });
-                  },
+                  onClearAll: () => setState(() => engine.clearAll()),
                   onTogglePause: () => setState(() => isPaused = !isPaused),
                   isPaused: isPaused,
                 ),

@@ -1,9 +1,8 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import '../physics/physics_engine.dart';
-import '../physics/particle_and_gear.dart';
+import '../physics/voxel_physics.dart';
 import '../physics/vector2d.dart';
-import '../widgets/physics_painter.dart';
+import '../widgets/voxel_painter.dart';
 
 class MolecularSandboxScene extends StatefulWidget {
   const MolecularSandboxScene({super.key});
@@ -13,7 +12,7 @@ class MolecularSandboxScene extends StatefulWidget {
 }
 
 class _MolecularSandboxSceneState extends State<MolecularSandboxScene> with SingleTickerProviderStateMixin {
-  late PhysicsEngine engine;
+  late VoxelPhysicsEngine engine;
   late AnimationController _ticker;
   double gravityY = 300.0;
   bool isPaused = false;
@@ -23,7 +22,7 @@ class _MolecularSandboxSceneState extends State<MolecularSandboxScene> with Sing
   @override
   void initState() {
     super.initState();
-    engine = PhysicsEngine(gravity: Vector2D(0, gravityY));
+    engine = VoxelPhysicsEngine(gravity: Vector2D(0, gravityY));
     _ticker = AnimationController(vsync: this, duration: const Duration(seconds: 1))
       ..repeat();
     _ticker.addListener(_onTick);
@@ -43,12 +42,14 @@ class _MolecularSandboxSceneState extends State<MolecularSandboxScene> with Sing
 
     for (int i = 0; i < count; i++) {
       Color col = palette[rand.nextInt(palette.length)];
-      engine.particles.add(Particle(
+      engine.freeVoxels.add(Voxel(
         position: Vector2D(100.0 + rand.nextDouble() * 350.0, 50.0 + rand.nextDouble() * 200.0),
         velocity: Vector2D((rand.nextDouble() - 0.5) * 100, (rand.nextDouble() - 0.5) * 100),
         color: col,
         radius: 3.5 + rand.nextDouble() * 3.5,
-        maxLife: double.infinity,
+        blockId: 0,
+        localOffset: Vector2D.zero(),
+        isFree: true,
       ));
     }
   }
@@ -63,10 +64,7 @@ class _MolecularSandboxSceneState extends State<MolecularSandboxScene> with Sing
   }
 
   void _updateMolecules() {
-    double boundsW = engine.boundsWidth;
-    double boundsH = engine.boundsHeight;
-
-    for (var p in engine.particles) {
+    for (var p in engine.freeVoxels) {
       if (touchPoint != null) {
         double dist = p.position.distanceTo(touchPoint!);
         if (dist < 180.0 && dist > 1.0) {
@@ -74,19 +72,6 @@ class _MolecularSandboxSceneState extends State<MolecularSandboxScene> with Sing
           double force = (180.0 - dist) * (attractMode ? -15.0 : 25.0);
           p.velocity = p.velocity + dir * (force * 0.016);
         }
-      }
-
-      if (p.position.y > boundsH - 12) {
-        p.position = Vector2D(p.position.x, boundsH - 12);
-        p.velocity = Vector2D(p.velocity.x * 0.9, -p.velocity.y * 0.6);
-      }
-      if (p.position.x < 12) {
-        p.position = Vector2D(12, p.position.y);
-        p.velocity = Vector2D(-p.velocity.x * 0.6, p.velocity.y * 0.9);
-      }
-      if (p.position.x > boundsW - 12) {
-        p.position = Vector2D(boundsW - 12, p.position.y);
-        p.velocity = Vector2D(-p.velocity.x * 0.6, p.velocity.y * 0.9);
       }
     }
   }
@@ -123,7 +108,7 @@ class _MolecularSandboxSceneState extends State<MolecularSandboxScene> with Sing
               ),
               CustomPaint(
                 size: Size(constraints.maxWidth, constraints.maxHeight),
-                painter: PhysicsPainter(engine: engine, showGears: false),
+                painter: VoxelPainter(engine: engine),
               ),
               if (touchPoint != null)
                 Positioned(
@@ -205,7 +190,7 @@ class _MolecularSandboxSceneState extends State<MolecularSandboxScene> with Sing
                         icon: Icon(isPaused ? Icons.play_arrow_rounded : Icons.pause_rounded, color: Colors.amberAccent),
                       ),
                       IconButton(
-                        onPressed: () => setState(() => engine.particles.clear()),
+                        onPressed: () => setState(() => engine.clearAll()),
                         icon: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent),
                       ),
                     ],
