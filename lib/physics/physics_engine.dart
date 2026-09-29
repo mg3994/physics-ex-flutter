@@ -22,10 +22,10 @@ class PhysicsEngine {
   double boundsHeight;
 
   PhysicsEngine({
-    this.gravity = const Vector2D(0, 450.0),
+    Vector2D? gravity,
     this.boundsWidth = 600,
     this.boundsHeight = 800,
-  });
+  }) : gravity = gravity ?? Vector2D(0, 450.0);
 
   void update(double dt) {
     if (dt <= 0) return;
@@ -156,7 +156,7 @@ class PhysicsEngine {
   }
 
   RigidPolygon _createSubPolygon(List<Vector2D> worldVerts, RigidPolygon original, Vector2D pushImpulse) {
-    Vector2D centroid = Vector2D.zero;
+    Vector2D centroid = Vector2D.zero();
     for (var v in worldVerts) {
       centroid += v;
     }
@@ -187,7 +187,7 @@ class PhysicsEngine {
 
         double dist = body.position.distanceTo(gear.center);
         if (dist < gear.radius + 30.0) {
-          Vector2D dirToGear = (gear.center - body.position).normalized;
+          Vector2D dirToGear = (gear.center - body.position).normalized();
           Vector2D tangential = gear.clockwise
               ? Vector2D(-dirToGear.y, dirToGear.x)
               : Vector2D(dirToGear.y, -dirToGear.x);
@@ -203,9 +203,9 @@ class PhysicsEngine {
               Vector2D debPos = body.position + Vector2D(math.cos(offsetAngle) * 8, math.sin(offsetAngle) * 8);
 
               List<Vector2D> debVerts = [
-                const Vector2D(-6, -6),
-                const Vector2D(6, -4),
-                const Vector2D(0, 8),
+                Vector2D(-6, -6),
+                Vector2D(6, -4),
+                Vector2D(0, 8),
               ];
 
               addedDebris.add(RigidPolygon(
@@ -257,7 +257,7 @@ class PhysicsEngine {
 
   void _resolvePolygonCollision(RigidPolygon a, RigidPolygon b) {
     double minOverlap = double.infinity;
-    Vector2D collisionNormal = Vector2D.zero;
+    Vector2D collisionNormal = Vector2D.zero();
 
     List<Vector2D> vertsA = a.worldVertices;
     List<Vector2D> vertsB = b.worldVertices;
@@ -311,7 +311,7 @@ class PhysicsEngine {
       Vector2D p1 = verts[i];
       Vector2D p2 = verts[(i + 1) % verts.length];
       Vector2D edge = p2 - p1;
-      normals.add(edge.perpendicular().normalized);
+      normals.add(edge.perpendicular().normalized());
     }
   }
 

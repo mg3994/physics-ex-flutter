@@ -28,7 +28,7 @@ class RigidPolygon {
   RigidPolygon({
     required this.position,
     required this.localVertices,
-    this.velocity = Vector2D.zero,
+    Vector2D? velocity,
     this.angularVelocity = 0.0,
     this.angle = 0.0,
     this.mass = 1.0,
@@ -39,7 +39,8 @@ class RigidPolygon {
     this.shapeType,
     this.isDebris = false,
     this.isLiquid = false,
-  })  : invMass = (bodyType == BodyType.static || mass == double.infinity) ? 0.0 : 1.0 / mass,
+  })  : velocity = velocity ?? Vector2D.zero(),
+        invMass = (bodyType == BodyType.static || mass == double.infinity) ? 0.0 : 1.0 / mass,
         inertia = _calculateInertia(mass, localVertices),
         invInertia = (bodyType == BodyType.static || mass == double.infinity) ? 0.0 : 1.0 / _calculateInertia(mass, localVertices);
 

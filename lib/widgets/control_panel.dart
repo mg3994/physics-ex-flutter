@@ -73,7 +73,7 @@ class ControlPanel extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 6),
-          // Gravity Slider
+          // Gravity Slider (0.0 to 1200.0)
           Row(
             children: [
               const Icon(Icons.arrow_downward_rounded, size: 18, color: Colors.white70),
@@ -81,9 +81,9 @@ class ControlPanel extends StatelessWidget {
               const Text('Gravity:', style: TextStyle(color: Colors.white70, fontSize: 13)),
               Expanded(
                 child: Slider(
-                  value: gravityY,
+                  value: gravityY.clamp(0.0, 1200.0),
                   min: 0.0,
-                  max: 100.0,
+                  max: 1200.0,
                   activeColor: Colors.cyanAccent,
                   onChanged: onGravityChanged,
                 ),

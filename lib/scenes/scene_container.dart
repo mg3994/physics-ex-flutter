@@ -86,16 +86,17 @@ class _SceneContainerState extends State<SceneContainer> {
               child: Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.science_rounded, color: Colors.cyanAccent, size: 42),
-                    const SizedBox(height: 8),
+                    const Icon(Icons.science_rounded, color: Colors.cyanAccent, size: 36),
+                    const SizedBox(height: 6),
                     const Text(
                       'Lafikobra Physics Lab',
-                      style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                      style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
                     ),
                     Text(
                       'Select Simulation Mode',
-                      style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 12),
+                      style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 11),
                     ),
                   ],
                 ),
@@ -103,6 +104,7 @@ class _SceneContainerState extends State<SceneContainer> {
             ),
             Expanded(
               child: ListView.builder(
+                padding: const EdgeInsets.symmetric(vertical: 8),
                 itemCount: _scenes.length,
                 itemBuilder: (context, index) {
                   final item = _scenes[index];
@@ -110,30 +112,36 @@ class _SceneContainerState extends State<SceneContainer> {
 
                   return Container(
                     margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
+                    child: Material(
                       color: isSelected ? (item['color'] as Color).withOpacity(0.15) : Colors.transparent,
                       borderRadius: BorderRadius.circular(12),
-                      border: isSelected ? Border.all(color: item['color'] as Color, width: 1.5) : null,
-                    ),
-                    child: ListTile(
-                      leading: Icon(item['icon'], color: item['color']),
-                      title: Text(
-                        item['title'],
-                        style: TextStyle(
-                          color: isSelected ? Colors.white : Colors.white70,
-                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                      clipBehavior: Clip.antiAlias,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          border: isSelected ? Border.all(color: item['color'] as Color, width: 1.5) : null,
+                        ),
+                        child: ListTile(
+                          leading: Icon(item['icon'], color: item['color']),
+                          title: Text(
+                            item['title'],
+                            style: TextStyle(
+                              color: isSelected ? Colors.white : Colors.white70,
+                              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                            ),
+                          ),
+                          subtitle: Text(
+                            item['subtitle'],
+                            style: const TextStyle(color: Colors.white38, fontSize: 11),
+                          ),
+                          onTap: () {
+                            setState(() {
+                              _selectedSceneIndex = index;
+                            });
+                            Navigator.pop(context);
+                          },
                         ),
                       ),
-                      subtitle: Text(
-                        item['subtitle'],
-                        style: const TextStyle(color: Colors.white38, fontSize: 11),
-                      ),
-                      onTap: () {
-                        setState(() {
-                          _selectedSceneIndex = index;
-                        });
-                        Navigator.pop(context);
-                      },
                     ),
                   );
                 },
