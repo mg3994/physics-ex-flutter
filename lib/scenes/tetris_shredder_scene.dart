@@ -45,14 +45,14 @@ class _TetrisShredderSceneState extends State<TetrisShredderScene> with SingleTi
   void _setupSceneGears() {
     engine.gears.clear();
     engine.gears.add(ShredderGear(
-      center: const Vector2D(220, 380),
+      center: Vector2D(220, 380),
       radius: 65,
       teethCount: 10,
       rotationSpeed: gearSpeed,
       clockwise: true,
     ));
     engine.gears.add(ShredderGear(
-      center: const Vector2D(350, 380),
+      center: Vector2D(350, 380),
       radius: 65,
       teethCount: 10,
       rotationSpeed: gearSpeed,

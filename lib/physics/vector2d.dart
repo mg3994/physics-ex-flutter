@@ -16,6 +16,9 @@ extension Vector2DExtensions on vm.Vector2 {
 
   vm.Vector2 perpendicular() => vm.Vector2(-y, x);
 
-  double distanceTo(vm.Vector2 other) => distanceToVector2(other);
-  double distanceToSquared(vm.Vector2 other) => distanceToVector2Squared(other);
+  vm.Vector2 get normalized {
+    final len = length;
+    if (len == 0) return vm.Vector2.zero();
+    return vm.Vector2(x / len, y / len);
+  }
 }

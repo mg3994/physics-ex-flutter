@@ -7,8 +7,8 @@ import 'package:physics_simulations/physics/physics_engine.dart';
 void main() {
   group('Physics Engine Unit Tests', () {
     test('Vector2D math operations', () {
-      const v1 = Vector2D(3, 4);
-      const v2 = Vector2D(1, 2);
+      final v1 = Vector2D(3, 4);
+      final v2 = Vector2D(1, 2);
 
       expect(v1.length, 5.0);
       expect((v1 + v2).x, 4.0);
@@ -17,7 +17,7 @@ void main() {
     });
 
     test('Tetris block creation', () {
-      final block = TetrisFactory.createTetrisBlock(TetrisShapeType.T, const Vector2D(100, 100));
+      final block = TetrisFactory.createTetrisBlock(TetrisShapeType.T, Vector2D(100, 100));
       expect(block.shapeType, TetrisShapeType.T);
       expect(block.position.x, 100.0);
       expect(block.localVertices.isNotEmpty, true);
@@ -25,7 +25,7 @@ void main() {
 
     test('Physics engine integration step', () {
       final engine = PhysicsEngine(boundsWidth: 500, boundsHeight: 500);
-      final block = TetrisFactory.createTetrisBlock(TetrisShapeType.I, const Vector2D(100, 100));
+      final block = TetrisFactory.createTetrisBlock(TetrisShapeType.I, Vector2D(100, 100));
 
       engine.bodies.add(block);
       engine.update(0.1);
