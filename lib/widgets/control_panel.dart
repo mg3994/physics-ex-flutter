@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
-import '../physics/rigid_polygon.dart';
 
 class ControlPanel extends StatelessWidget {
   final double gravityY;
   final ValueChanged<double> onGravityChanged;
-  final double shredderSpeed;
+  final double? shredderSpeed;
   final ValueChanged<double>? onShredderSpeedChanged;
-  final bool laserActive;
+  final bool? laserActive;
   final ValueChanged<bool>? onLaserActiveChanged;
-  final VoidCallback onSpawnTetrisBlock;
+  final VoidCallback onSpawnBlock;
   final VoidCallback onClearAll;
   final VoidCallback onTogglePause;
   final bool isPaused;
@@ -17,11 +16,11 @@ class ControlPanel extends StatelessWidget {
     super.key,
     required this.gravityY,
     required this.onGravityChanged,
-    this.shredderSpeed = 5.0,
+    this.shredderSpeed,
     this.onShredderSpeedChanged,
-    this.laserActive = true,
+    this.laserActive,
     this.onLaserActiveChanged,
-    required this.onSpawnTetrisBlock,
+    required this.onSpawnBlock,
     required this.onClearAll,
     required this.onTogglePause,
     required this.isPaused,
@@ -30,55 +29,50 @@ class ControlPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1E2E).withOpacity(0.85),
+        color: const Color(0xFF1E293B).withOpacity(0.9),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.1)),
+        border: Border.all(color: Colors.white12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.4),
-            blurRadius: 12,
+            color: Colors.black.withOpacity(0.5),
+            blurRadius: 10,
             offset: const Offset(0, 4),
-          ),
+          )
         ],
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               ElevatedButton.icon(
-                onPressed: onSpawnTetrisBlock,
+                onPressed: onSpawnBlock,
                 icon: const Icon(Icons.add_box_rounded, color: Colors.cyanAccent),
-                label: const Text('Drop Block', style: TextStyle(color: Colors.white)),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF2A2D3D),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                ),
+                label: const Text('Drop Tetris Block', style: TextStyle(color: Colors.white)),
+                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF334155)),
               ),
-              IconButton(
-                onPressed: onTogglePause,
-                icon: Icon(
-                  isPaused ? Icons.play_arrow_rounded : Icons.pause_rounded,
-                  color: Colors.amberAccent,
-                  size: 28,
-                ),
-                tooltip: isPaused ? 'Resume' : 'Pause',
-              ),
-              IconButton(
-                onPressed: onClearAll,
-                icon: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent, size: 26),
-                tooltip: 'Clear Screen',
+              Row(
+                children: [
+                  IconButton(
+                    onPressed: onTogglePause,
+                    icon: Icon(
+                      isPaused ? Icons.play_arrow_rounded : Icons.pause_rounded,
+                      color: Colors.amberAccent,
+                      size: 28,
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: onClearAll,
+                    icon: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent, size: 26),
+                  ),
+                ],
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          const Divider(color: Colors.white24, height: 1),
-          const SizedBox(height: 8),
-
+          const SizedBox(height: 6),
           // Gravity Slider
           Row(
             children: [
@@ -89,7 +83,7 @@ class ControlPanel extends StatelessWidget {
                 child: Slider(
                   value: gravityY,
                   min: 0.0,
-                  max: 1200.0,
+                  max: 100.0,
                   activeColor: Colors.cyanAccent,
                   onChanged: onGravityChanged,
                 ),
@@ -97,9 +91,7 @@ class ControlPanel extends StatelessWidget {
               Text('${gravityY.round()}', style: const TextStyle(color: Colors.cyanAccent, fontSize: 12)),
             ],
           ),
-
-          // Shredder Speed Slider if applicable
-          if (onShredderSpeedChanged != null) ...[
+          if (onShredderSpeedChanged != null && shredderSpeed != null) ...[
             Row(
               children: [
                 const Icon(Icons.sync_rounded, size: 18, color: Colors.orangeAccent),
@@ -107,20 +99,18 @@ class ControlPanel extends StatelessWidget {
                 const Text('Gear Speed:', style: TextStyle(color: Colors.white70, fontSize: 13)),
                 Expanded(
                   child: Slider(
-                    value: shredderSpeed,
+                    value: shredderSpeed!,
                     min: 0.0,
                     max: 15.0,
                     activeColor: Colors.orangeAccent,
                     onChanged: onShredderSpeedChanged,
                   ),
                 ),
-                Text(shredderSpeed.toStringAsFixed(1), style: const TextStyle(color: Colors.orangeAccent, fontSize: 12)),
+                Text(shredderSpeed!.toStringAsFixed(1), style: const TextStyle(color: Colors.orangeAccent, fontSize: 12)),
               ],
             ),
           ],
-
-          // Laser Toggle if applicable
-          if (onLaserActiveChanged != null) ...[
+          if (onLaserActiveChanged != null && laserActive != null) ...[
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -132,7 +122,7 @@ class ControlPanel extends StatelessWidget {
                   ],
                 ),
                 Switch(
-                  value: laserActive,
+                  value: laserActive!,
                   activeColor: Colors.pinkAccent,
                   onChanged: onLaserActiveChanged,
                 ),

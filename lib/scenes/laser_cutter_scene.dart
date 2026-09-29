@@ -1,11 +1,11 @@
 import 'dart:async';
 import 'dart:math' as math;
+import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
-import '../physics/physics_engine.dart';
-import '../physics/tetris_factory.dart';
-import '../physics/particle_and_gear.dart';
-import '../physics/vector2d.dart';
-import '../widgets/physics_painter.dart';
+import 'package:vector_math/vector_math_64.dart' as vmath;
+import '../physics/forge2d_world.dart';
+import '../physics/tetris_forge_body.dart';
+import '../physics/laser_slicer.dart';
 import '../widgets/control_panel.dart';
 
 class LaserCutterScene extends StatefulWidget {
@@ -15,177 +15,121 @@ class LaserCutterScene extends StatefulWidget {
   State<LaserCutterScene> createState() => _LaserCutterSceneState();
 }
 
-class _LaserCutterSceneState extends State<LaserCutterScene> with SingleTickerProviderStateMixin {
-  late PhysicsEngine engine;
-  late AnimationController _ticker;
-  double gravityY = 400.0;
+class _LaserCutterSceneState extends State<LaserCutterScene> {
+  late LafikobraForgeGame game;
+  late LaserBeamComponent laserBeam;
+  double gravityY = 30.0;
   bool laserActive = true;
   bool isPaused = false;
   Timer? _autoSpawnTimer;
   bool autoSpawn = true;
-  double laserYPercent = 0.45;
 
   @override
   void initState() {
     super.initState();
-    engine = PhysicsEngine(gravity: Vector2D(0, gravityY));
-    _ticker = AnimationController(vsync: this, duration: const Duration(seconds: 1))
-      ..repeat();
-    _ticker.addListener(_onTick);
+    game = LafikobraForgeGame(gravity: vmath.Vector2(0, gravityY));
+    _setupLaser();
 
-    _autoSpawnTimer = Timer.periodic(const Duration(milliseconds: 1200), (_) {
+    _autoSpawnTimer = Timer.periodic(const Duration(milliseconds: 1100), (_) {
       if (autoSpawn && !isPaused) {
         _spawnRandomBlock();
       }
     });
   }
 
-  void _onTick() {
-    if (!isPaused) {
-      setState(() {
-        engine.update(0.016);
-      });
-    }
+  void _setupLaser() {
+    laserBeam = LaserBeamComponent(
+      startPoint: vmath.Vector2(-18.0, 2.0),
+      endPoint: vmath.Vector2(18.0, 2.0),
+      color: const Color(0xFFFF0055),
+      isActive: laserActive,
+    );
+    game.add(laserBeam);
   }
 
-  void _spawnRandomBlock([Vector2D? customPos]) {
+  void _spawnRandomBlock([vmath.Vector2? pos]) {
     final rand = math.Random();
-    TetrisShapeType type = TetrisShapeType.values[rand.nextInt(TetrisShapeType.values.length)];
-    Vector2D spawnPos = customPos ?? Vector2D(engine.boundsWidth * 0.3 + rand.nextDouble() * (engine.boundsWidth * 0.4), 30.0);
-    engine.bodies.add(TetrisFactory.createTetrisBlock(type, spawnPos));
+    TetrisType type = TetrisType.values[rand.nextInt(TetrisType.values.length)];
+    Color color = TetrisForgeBody.getColorForType(type);
+
+    vmath.Vector2 spawnPos = pos ?? vmath.Vector2((rand.nextDouble() - 0.5) * 10.0, -18.0);
+
+    game.add(TetrisForgeBody(
+      initialPosition: spawnPos,
+      shapeType: type,
+      color: color,
+    ));
   }
 
   @override
   void dispose() {
-    _ticker.dispose();
     _autoSpawnTimer?.cancel();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        engine.boundsWidth = constraints.maxWidth;
-        engine.boundsHeight = constraints.maxHeight;
-
-        // Position laser across center screen width
-        double laserY = constraints.maxHeight * laserYPercent;
-        engine.lasers = [
-          LaserCutLine(
-            start: Vector2D(20, laserY),
-            end: Vector2D(constraints.maxWidth - 20, laserY),
-            color: const Color(0xFFFF0055),
-            isActive: laserActive,
+    return Stack(
+      children: [
+        GameWidget(game: game),
+        Positioned(
+          top: 16,
+          right: 16,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.black54,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.white12),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('Auto-Drop:', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                Switch(
+                  value: autoSpawn,
+                  activeColor: Colors.pinkAccent,
+                  onChanged: (val) => setState(() => autoSpawn = val),
+                ),
+              ],
+            ),
           ),
-        ];
-
-        return GestureDetector(
-          onTapDown: (details) {
-            _spawnRandomBlock(Vector2D(details.localPosition.dx, details.localPosition.dy));
-          },
-          child: Stack(
-            children: [
-              // Sci-Fi Tech Grid Background
-              Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [Color(0xFF0D0E1A), Color(0xFF1B182B)],
-                  ),
-                ),
-              ),
-
-              // Physics Canvas
-              CustomPaint(
-                size: Size(constraints.maxWidth, constraints.maxHeight),
-                painter: PhysicsPainter(engine: engine, showGears: false),
-              ),
-
-              // Laser Height Adjuster
-              Positioned(
-                left: 12,
-                top: constraints.maxHeight * 0.2,
-                bottom: constraints.maxHeight * 0.35,
-                child: Column(
-                  children: [
-                    const Icon(Icons.height_rounded, color: Colors.pinkAccent, size: 20),
-                    Expanded(
-                      child: RotatedBox(
-                        quarterTurns: 3,
-                        child: Slider(
-                          value: laserYPercent,
-                          min: 0.25,
-                          max: 0.70,
-                          activeColor: Colors.pinkAccent,
-                          onChanged: (val) {
-                            setState(() {
-                              laserYPercent = val;
-                            });
-                          },
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // Auto Spawn Banner
-              Positioned(
-                top: 16,
-                right: 16,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: Colors.black54,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Colors.white12),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Text('Auto-Drop:', style: TextStyle(color: Colors.white70, fontSize: 12)),
-                      Switch(
-                        value: autoSpawn,
-                        activeColor: Colors.pinkAccent,
-                        onChanged: (val) => setState(() => autoSpawn = val),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              // Control Dashboard Overlay
-              Positioned(
-                bottom: 24,
-                left: 16,
-                right: 16,
-                child: ControlPanel(
-                  gravityY: gravityY,
-                  onGravityChanged: (val) {
-                    setState(() {
-                      gravityY = val;
-                      engine.gravity = Vector2D(0, gravityY);
-                    });
-                  },
-                  laserActive: laserActive,
-                  onLaserActiveChanged: (val) => setState(() => laserActive = val),
-                  onSpawnTetrisBlock: () => _spawnRandomBlock(),
-                  onClearAll: () {
-                    setState(() {
-                      engine.bodies.clear();
-                      engine.particles.clear();
-                    });
-                  },
-                  onTogglePause: () => setState(() => isPaused = !isPaused),
-                  isPaused: isPaused,
-                ),
-              ),
-            ],
+        ),
+        Positioned(
+          bottom: 24,
+          left: 16,
+          right: 16,
+          child: ControlPanel(
+            gravityY: gravityY,
+            onGravityChanged: (val) {
+              setState(() {
+                gravityY = val;
+                game.setGravityY(gravityY);
+              });
+            },
+            laserActive: laserActive,
+            onLaserActiveChanged: (val) {
+              setState(() {
+                laserActive = val;
+                laserBeam.isActive = laserActive;
+              });
+            },
+            onSpawnBlock: () => _spawnRandomBlock(),
+            onClearAll: () => setState(() => game.clearAllBodies()),
+            onTogglePause: () {
+              setState(() {
+                isPaused = !isPaused;
+                if (isPaused) {
+                  game.pauseEngine();
+                } else {
+                  game.resumeEngine();
+                }
+              });
+            },
+            isPaused: isPaused,
           ),
-        );
-      },
+        ),
+      ],
     );
   }
 }

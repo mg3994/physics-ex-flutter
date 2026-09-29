@@ -1,11 +1,12 @@
 import 'dart:async';
 import 'dart:math' as math;
+import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
-import '../physics/physics_engine.dart';
-import '../physics/tetris_factory.dart';
-import '../physics/particle_and_gear.dart';
-import '../physics/vector2d.dart';
-import '../widgets/physics_painter.dart';
+import 'package:vector_math/vector_math_64.dart' as vmath;
+import '../physics/forge2d_world.dart';
+import '../physics/tetris_forge_body.dart';
+import '../physics/shredder_gear_body.dart';
+import '../physics/forge_particle_system.dart';
 import '../widgets/control_panel.dart';
 
 class LavaMeltScene extends StatefulWidget {
@@ -15,230 +16,141 @@ class LavaMeltScene extends StatefulWidget {
   State<LavaMeltScene> createState() => _LavaMeltSceneState();
 }
 
-class _LavaMeltSceneState extends State<LavaMeltScene> with SingleTickerProviderStateMixin {
-  late PhysicsEngine engine;
-  late AnimationController _ticker;
-  double gravityY = 480.0;
-  double gearSpeed = 7.0;
+class _LavaMeltSceneState extends State<LavaMeltScene> {
+  late LafikobraForgeGame game;
+  late ShredderGearBody gear;
+  double gravityY = 35.0;
+  double gearSpeed = 6.0;
   bool isPaused = false;
   Timer? _autoSpawnTimer;
+  Timer? _lavaParticleTimer;
   bool autoSpawn = true;
 
   @override
   void initState() {
     super.initState();
-    engine = PhysicsEngine(gravity: Vector2D(0, gravityY));
-    _ticker = AnimationController(vsync: this, duration: const Duration(seconds: 1))
-      ..repeat();
-    _ticker.addListener(_onTick);
+    game = LafikobraForgeGame(gravity: vmath.Vector2(0, gravityY));
+    _setupLavaScene();
 
     _autoSpawnTimer = Timer.periodic(const Duration(milliseconds: 1100), (_) {
       if (autoSpawn && !isPaused) {
         _spawnRandomBlock();
       }
     });
-  }
 
-  void _onTick() {
-    if (!isPaused) {
-      setState(() {
-        engine.update(0.016);
-        _processLavaMelting();
-      });
-    }
-  }
-
-  void _processLavaMelting() {
-    double lavaLevel = engine.boundsHeight - 80.0;
-    List<int> toRemove = [];
-    final rand = math.Random();
-
-    for (int i = 0; i < engine.bodies.length; i++) {
-      var body = engine.bodies[i];
-      if (body.position.y > lavaLevel - 30.0) {
-        toRemove.add(i);
-
-        // Spawn liquid lava droplets
-        for (int p = 0; p < 25; p++) {
-          double pAngle = -math.pi * 0.85 + rand.nextDouble() * math.pi * 0.7;
-          double pSpeed = 80.0 + rand.nextDouble() * 160.0;
-          Color lavaColor = Color.lerp(
-            const Color(0xFFFF4500), // Lava Orange
-            const Color(0xFFFFD700), // Lava Gold
-            rand.nextDouble(),
-          )!;
-
-          engine.particles.add(Particle(
-            position: Vector2D(body.position.x + (rand.nextDouble() - 0.5) * 30, body.position.y),
-            velocity: Vector2D(math.cos(pAngle) * pSpeed, math.sin(pAngle) * pSpeed),
-            color: lavaColor,
-            radius: 3.5 + rand.nextDouble() * 4.0,
-            maxLife: 1.2 + rand.nextDouble() * 0.8,
-            isLava: true,
-          ));
-        }
+    _lavaParticleTimer = Timer.periodic(const Duration(milliseconds: 100), (_) {
+      if (!isPaused) {
+        _spawnLavaParticle();
       }
-    }
-
-    for (int idx in toRemove.reversed) {
-      if (idx < engine.bodies.length) {
-        engine.bodies.removeAt(idx);
-      }
-    }
+    });
   }
 
-  void _spawnRandomBlock([Vector2D? customPos]) {
+  void _setupLavaScene() {
+    gear = ShredderGearBody(
+      position: vmath.Vector2(0.0, 6.0),
+      radius: 5.0,
+      speed: gearSpeed,
+      clockwise: true,
+    );
+    game.add(gear);
+  }
+
+  void _spawnLavaParticle() {
     final rand = math.Random();
-    TetrisShapeType type = TetrisShapeType.values[rand.nextInt(TetrisShapeType.values.length)];
-    Vector2D spawnPos = customPos ?? Vector2D(engine.boundsWidth * 0.35 + rand.nextDouble() * (engine.boundsWidth * 0.3), 30.0);
-    engine.bodies.add(TetrisFactory.createTetrisBlock(type, spawnPos));
+    double px = (rand.nextDouble() - 0.5) * 12.0;
+    game.add(ParticleBodyComponent(
+      initialPosition: vmath.Vector2(px, 18.0),
+      initialVelocity: vmath.Vector2((rand.nextDouble() - 0.5) * 4, -5.0 - rand.nextDouble() * 5.0),
+      color: Color.lerp(const Color(0xFFFF4500), const Color(0xFFFFD700), rand.nextDouble())!,
+      radius: 0.35,
+      isFluid: true,
+    ));
+  }
+
+  void _spawnRandomBlock([vmath.Vector2? pos]) {
+    final rand = math.Random();
+    TetrisType type = TetrisType.values[rand.nextInt(TetrisType.values.length)];
+    Color color = TetrisForgeBody.getColorForType(type);
+
+    vmath.Vector2 spawnPos = pos ?? vmath.Vector2((rand.nextDouble() - 0.5) * 8.0, -18.0);
+
+    game.add(TetrisForgeBody(
+      initialPosition: spawnPos,
+      shapeType: type,
+      color: color,
+    ));
   }
 
   @override
   void dispose() {
-    _ticker.dispose();
     _autoSpawnTimer?.cancel();
+    _lavaParticleTimer?.cancel();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        engine.boundsWidth = constraints.maxWidth;
-        engine.boundsHeight = constraints.maxHeight;
-
-        double centerX = constraints.maxWidth / 2;
-        double centerY = constraints.maxHeight * 0.55;
-        if (engine.gears.isEmpty) {
-          engine.gears.add(ShredderGear(
-            center: Vector2D(centerX - 60, centerY),
-            radius: 65,
-            teethCount: 10,
-            rotationSpeed: gearSpeed,
-            clockwise: true,
-          ));
-          engine.gears.add(ShredderGear(
-            center: Vector2D(centerX + 60, centerY),
-            radius: 65,
-            teethCount: 10,
-            rotationSpeed: gearSpeed,
-            clockwise: false,
-          ));
-        } else {
-          engine.gears[0].center = Vector2D(centerX - 60, centerY);
-          engine.gears[1].center = Vector2D(centerX + 60, centerY);
-        }
-
-        return GestureDetector(
-          onTapDown: (details) {
-            _spawnRandomBlock(Vector2D(details.localPosition.dx, details.localPosition.dy));
-          },
-          child: Stack(
-            children: [
-              // Fire Fiery Dark Background
-              Container(
-                decoration: const BoxDecoration(
-                  gradient: RadialGradient(
-                    center: Alignment.bottomCenter,
-                    radius: 1.3,
-                    colors: [Color(0xFF3A0B00), Color(0xFF0F0505)],
-                  ),
+    return Stack(
+      children: [
+        GameWidget(game: game),
+        Positioned(
+          top: 16,
+          right: 16,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.black54,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.white12),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('Auto-Drop:', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                Switch(
+                  value: autoSpawn,
+                  activeColor: Colors.deepOrangeAccent,
+                  onChanged: (val) => setState(() => autoSpawn = val),
                 ),
-              ),
-
-              // Physics Canvas
-              CustomPaint(
-                size: Size(constraints.maxWidth, constraints.maxHeight),
-                painter: PhysicsPainter(engine: engine),
-              ),
-
-              // Glowing Lava Pool Fill at Base
-              Positioned(
-                bottom: 0,
-                left: 0,
-                right: 0,
-                height: 80,
-                child: Container(
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [Color(0x88FF4500), Color(0xFFFF2200)],
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.deepOrangeAccent.withOpacity(0.6),
-                        blurRadius: 25,
-                        spreadRadius: 5,
-                      )
-                    ],
-                  ),
-                ),
-              ),
-
-              // Auto Spawn Banner
-              Positioned(
-                top: 16,
-                right: 16,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: Colors.black54,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Colors.white12),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Text('Auto-Drop:', style: TextStyle(color: Colors.white70, fontSize: 12)),
-                      Switch(
-                        value: autoSpawn,
-                        activeColor: Colors.deepOrangeAccent,
-                        onChanged: (val) => setState(() => autoSpawn = val),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              // Control Dashboard Overlay
-              Positioned(
-                bottom: 24,
-                left: 16,
-                right: 16,
-                child: ControlPanel(
-                  gravityY: gravityY,
-                  onGravityChanged: (val) {
-                    setState(() {
-                      gravityY = val;
-                      engine.gravity = Vector2D(0, gravityY);
-                    });
-                  },
-                  shredderSpeed: gearSpeed,
-                  onShredderSpeedChanged: (val) {
-                    setState(() {
-                      gearSpeed = val;
-                      for (var gear in engine.gears) {
-                        gear.rotationSpeed = gearSpeed;
-                      }
-                    });
-                  },
-                  onSpawnTetrisBlock: () => _spawnRandomBlock(),
-                  onClearAll: () {
-                    setState(() {
-                      engine.bodies.clear();
-                      engine.particles.clear();
-                    });
-                  },
-                  onTogglePause: () => setState(() => isPaused = !isPaused),
-                  isPaused: isPaused,
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
-        );
-      },
+        ),
+        Positioned(
+          bottom: 24,
+          left: 16,
+          right: 16,
+          child: ControlPanel(
+            gravityY: gravityY,
+            onGravityChanged: (val) {
+              setState(() {
+                gravityY = val;
+                game.setGravityY(gravityY);
+              });
+            },
+            shredderSpeed: gearSpeed,
+            onShredderSpeedChanged: (val) {
+              setState(() {
+                gearSpeed = val;
+                gear.setMotorSpeed(gearSpeed);
+              });
+            },
+            onSpawnBlock: () => _spawnRandomBlock(),
+            onClearAll: () => setState(() => game.clearAllBodies()),
+            onTogglePause: () {
+              setState(() {
+                isPaused = !isPaused;
+                if (isPaused) {
+                  game.pauseEngine();
+                } else {
+                  game.resumeEngine();
+                }
+              });
+            },
+            isPaused: isPaused,
+          ),
+        ),
+      ],
     );
   }
 }
