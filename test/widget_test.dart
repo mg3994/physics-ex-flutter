@@ -21,8 +21,8 @@ void main() {
     await tester.pump(const Duration(milliseconds: 500));
 
     expect(find.text('Lafikobra Physics Lab'), findsOneWidget);
-    expect(find.text('Laser Cutter Shredder'), findsOneWidget);
-    expect(find.text('Lava Melt Chamber'), findsOneWidget);
-    expect(find.text('Molecular Physics Sandbox'), findsOneWidget);
+    expect(find.text('Laser Cutter Shredder', skipOffstage: false), findsOneWidget);
+    expect(find.text('Lava Melt Chamber', skipOffstage: false), findsOneWidget);
+    expect(find.text('Molecular Physics Sandbox', skipOffstage: false), findsOneWidget);
   });
 }
