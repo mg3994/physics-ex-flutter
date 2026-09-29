@@ -48,7 +48,7 @@ class _LavaMeltSceneState extends State<LavaMeltScene> with SingleTickerProvider
   void _spawnRandomBlock([Vector2D? customPos]) {
     final rand = math.Random();
     TetrisType type = TetrisType.values[rand.nextInt(TetrisType.values.length)];
-    Vector2D spawnPos = customPos ?? Vector2D(engine.boundsWidth * 0.35 + rand.nextDouble() * (engine.boundsWidth * 0.3), 30.0);
+    Vector2D spawnPos = customPos ?? Vector2D(VoxelPhysicsEngine.virtualWidth * 0.35 + rand.nextDouble() * (VoxelPhysicsEngine.virtualWidth * 0.3), 50.0);
     engine.spawnTetrisBlock(type, spawnPos);
   }
 
@@ -63,34 +63,30 @@ class _LavaMeltSceneState extends State<LavaMeltScene> with SingleTickerProvider
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        engine.boundsWidth = constraints.maxWidth;
-        engine.boundsHeight = constraints.maxHeight;
-
-        double centerX = constraints.maxWidth / 2;
-        double centerY = constraints.maxHeight * 0.50;
+        double centerX = VoxelPhysicsEngine.virtualWidth / 2;
+        double centerY = VoxelPhysicsEngine.virtualHeight * 0.50;
         if (engine.gears.isEmpty) {
           engine.gears.add(Gear(
-            center: Vector2D(centerX - 55, centerY),
-            radius: 50,
+            center: Vector2D(centerX - 65, centerY),
+            radius: 60,
             teethCount: 10,
             rotationSpeed: gearSpeed,
             clockwise: true,
           ));
           engine.gears.add(Gear(
-            center: Vector2D(centerX + 55, centerY),
-            radius: 50,
+            center: Vector2D(centerX + 65, centerY),
+            radius: 60,
             teethCount: 10,
             rotationSpeed: gearSpeed,
             clockwise: false,
           ));
-        } else {
-          engine.gears[0].center = Vector2D(centerX - 55, centerY);
-          engine.gears[1].center = Vector2D(centerX + 55, centerY);
         }
 
         return GestureDetector(
           onTapDown: (details) {
-            _spawnRandomBlock(Vector2D(details.localPosition.dx, details.localPosition.dy));
+            double vx = details.localPosition.dx * (VoxelPhysicsEngine.virtualWidth / constraints.maxWidth);
+            double vy = details.localPosition.dy * (VoxelPhysicsEngine.virtualHeight / constraints.maxHeight);
+            _spawnRandomBlock(Vector2D(vx, vy));
           },
           child: Stack(
             children: [

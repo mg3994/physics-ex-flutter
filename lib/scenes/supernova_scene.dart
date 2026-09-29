@@ -41,11 +41,11 @@ class _SupernovaSceneState extends State<SupernovaScene> with SingleTickerProvid
 
     engine.clearAll();
 
-    Vector2D center = Vector2D(engine.boundsWidth / 2, engine.boundsHeight * 0.45);
+    Vector2D center = Vector2D(VoxelPhysicsEngine.virtualWidth / 2, VoxelPhysicsEngine.virtualHeight * 0.45);
 
     for (int i = 0; i < 450; i++) {
       double angle = rand.nextDouble() * 2 * math.pi;
-      double speed = 100.0 + rand.nextDouble() * 300.0;
+      double speed = 120.0 + rand.nextDouble() * 320.0;
       Color color = palette[rand.nextInt(palette.length)];
 
       engine.freeVoxels.add(Voxel(
@@ -78,12 +78,11 @@ class _SupernovaSceneState extends State<SupernovaScene> with SingleTickerProvid
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        engine.boundsWidth = constraints.maxWidth;
-        engine.boundsHeight = constraints.maxHeight;
-
         return GestureDetector(
           onTapDown: (details) {
-            engine.triggerExplosion(Vector2D(details.localPosition.dx, details.localPosition.dy), 4.0);
+            double vx = details.localPosition.dx * (VoxelPhysicsEngine.virtualWidth / constraints.maxWidth);
+            double vy = details.localPosition.dy * (VoxelPhysicsEngine.virtualHeight / constraints.maxHeight);
+            engine.triggerExplosion(Vector2D(vx, vy), 4.0);
           },
           child: Stack(
             children: [

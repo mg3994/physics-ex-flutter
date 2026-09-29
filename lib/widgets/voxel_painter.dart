@@ -10,22 +10,33 @@ class VoxelPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    _drawHopperContainer(canvas, size);
+    double scaleX = size.width / VoxelPhysicsEngine.virtualWidth;
+    double scaleY = size.height / VoxelPhysicsEngine.virtualHeight;
 
+    canvas.save();
+    canvas.scale(scaleX, scaleY);
+
+    // 1. Draw Funnel Hopper Walls
+    _drawHopperContainer(canvas);
+
+    // 2. Draw Black Hole if active
     if (engine.blackHoleCenter != null) {
       _drawBlackHole(canvas, engine.blackHoleCenter!);
     }
 
+    // 3. Draw Gears
     for (var gear in engine.gears) {
       _drawGear(canvas, gear);
     }
 
+    // 4. Draw Lasers
     for (var laser in engine.lasers) {
       if (laser.isActive) {
         _drawLaser(canvas, laser);
       }
     }
 
+    // 5. Draw Voxel Blocks
     for (var block in engine.blocks) {
       for (var v in block.voxels) {
         if (!v.isFree) {
@@ -44,12 +55,15 @@ class VoxelPainter extends CustomPainter {
       }
     }
 
+    // 6. Draw Free Voxel Particles
     for (var v in engine.freeVoxels) {
       final pPaint = Paint()
         ..color = v.color.withOpacity(0.9)
         ..style = PaintingStyle.fill;
       canvas.drawCircle(Offset(v.position.x, v.position.y), v.radius, pPaint);
     }
+
+    canvas.restore();
   }
 
   void _drawBlackHole(Canvas canvas, Vector2D centerPos) {
@@ -62,35 +76,38 @@ class VoxelPainter extends CustomPainter {
           const Color(0xFF9D00FF).withOpacity(0.4),
           Colors.transparent,
         ],
-      ).createShader(Rect.fromCircle(center: center, radius: 80.0));
-    canvas.drawCircle(center, 80.0, glowPaint);
+      ).createShader(Rect.fromCircle(center: center, radius: 100.0));
+    canvas.drawCircle(center, 100.0, glowPaint);
 
     final Paint bhBody = Paint()
       ..color = Colors.black
       ..style = PaintingStyle.fill;
-    canvas.drawCircle(center, 22.0, bhBody);
+    canvas.drawCircle(center, 28.0, bhBody);
 
     final Paint bhRing = Paint()
       ..color = Colors.cyanAccent
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.0;
-    canvas.drawCircle(center, 22.0, bhRing);
+      ..strokeWidth = 2.5;
+    canvas.drawCircle(center, 28.0, bhRing);
   }
 
-  void _drawHopperContainer(Canvas canvas, Size size) {
+  void _drawHopperContainer(Canvas canvas) {
+    double w = VoxelPhysicsEngine.virtualWidth;
+    double h = VoxelPhysicsEngine.virtualHeight;
+
     final wallPaint = Paint()
       ..color = const Color(0xFF1E293B)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 6.0;
+      ..strokeWidth = 8.0;
 
     final path = Path();
-    path.moveTo(0, size.height * 0.1);
-    path.lineTo(size.width * 0.2, size.height * 0.45);
-    path.lineTo(size.width * 0.2, size.height);
+    path.moveTo(0, h * 0.1);
+    path.lineTo(w * 0.22, h * 0.45);
+    path.lineTo(w * 0.22, h);
 
-    path.moveTo(size.width, size.height * 0.1);
-    path.lineTo(size.width * 0.8, size.height * 0.45);
-    path.lineTo(size.width * 0.8, size.height);
+    path.moveTo(w, h * 0.1);
+    path.lineTo(w * 0.78, h * 0.45);
+    path.lineTo(w * 0.78, h);
 
     canvas.drawPath(path, wallPaint);
   }
@@ -112,8 +129,8 @@ class VoxelPainter extends CustomPainter {
       double angle = gear.currentAngle + i * angleStep;
 
       final path = Path();
-      double rIn = gear.radius - 4;
-      double rOut = gear.radius + 12.0;
+      double rIn = gear.radius - 6;
+      double rOut = gear.radius + 16.0;
 
       double a1 = angle - angleStep * 0.25;
       double a2 = angle + angleStep * 0.25;
@@ -136,14 +153,14 @@ class VoxelPainter extends CustomPainter {
 
     final Paint glow = Paint()
       ..color = laser.color.withOpacity(0.5)
-      ..strokeWidth = 10.0
+      ..strokeWidth = 12.0
       ..strokeCap = StrokeCap.round
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6.0);
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8.0);
     canvas.drawLine(start, end, glow);
 
     final Paint core = Paint()
       ..color = Colors.white
-      ..strokeWidth = 3.0
+      ..strokeWidth = 4.0
       ..strokeCap = StrokeCap.round;
     canvas.drawLine(start, end, core);
   }

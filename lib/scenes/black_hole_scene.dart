@@ -45,13 +45,16 @@ class _BlackHoleSceneState extends State<BlackHoleScene> with SingleTickerProvid
       const Color(0xFFFFFF00),
     ];
 
+    double bhX = VoxelPhysicsEngine.virtualWidth / 2;
+    double bhY = VoxelPhysicsEngine.virtualHeight * 0.48;
+
     for (int i = 0; i < count; i++) {
       Color col = palette[rand.nextInt(palette.length)];
       double angle = rand.nextDouble() * 2 * math.pi;
-      double dist = 80.0 + rand.nextDouble() * 200.0;
+      double dist = 100.0 + rand.nextDouble() * 250.0;
 
-      Vector2D pos = Vector2D(300 + math.cos(angle) * dist, 400 + math.sin(angle) * dist);
-      Vector2D orbitalVel = Vector2D(-math.sin(angle) * 120.0, math.cos(angle) * 120.0);
+      Vector2D pos = Vector2D(bhX + math.cos(angle) * dist, bhY + math.sin(angle) * dist);
+      Vector2D orbitalVel = Vector2D(-math.sin(angle) * 140.0, math.cos(angle) * 140.0);
 
       engine.freeVoxels.add(Voxel(
         position: pos,
@@ -76,7 +79,7 @@ class _BlackHoleSceneState extends State<BlackHoleScene> with SingleTickerProvid
   void _spawnRandomBlock() {
     final rand = math.Random();
     TetrisType type = TetrisType.values[rand.nextInt(TetrisType.values.length)];
-    engine.spawnTetrisBlock(type, Vector2D(engine.boundsWidth * 0.2 + rand.nextDouble() * (engine.boundsWidth * 0.6), 40.0));
+    engine.spawnTetrisBlock(type, Vector2D(VoxelPhysicsEngine.virtualWidth * 0.2 + rand.nextDouble() * (VoxelPhysicsEngine.virtualWidth * 0.6), 50.0));
   }
 
   @override
@@ -90,14 +93,13 @@ class _BlackHoleSceneState extends State<BlackHoleScene> with SingleTickerProvid
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        engine.boundsWidth = constraints.maxWidth;
-        engine.boundsHeight = constraints.maxHeight;
-
-        engine.blackHoleCenter = Vector2D(constraints.maxWidth / 2, constraints.maxHeight * 0.48);
+        engine.blackHoleCenter = Vector2D(VoxelPhysicsEngine.virtualWidth / 2, VoxelPhysicsEngine.virtualHeight * 0.48);
 
         return GestureDetector(
           onTapDown: (details) {
-            engine.triggerExplosion(Vector2D(details.localPosition.dx, details.localPosition.dy), 3.0);
+            double vx = details.localPosition.dx * (VoxelPhysicsEngine.virtualWidth / constraints.maxWidth);
+            double vy = details.localPosition.dy * (VoxelPhysicsEngine.virtualHeight / constraints.maxHeight);
+            engine.triggerExplosion(Vector2D(vx, vy), 3.5);
           },
           child: Stack(
             children: [

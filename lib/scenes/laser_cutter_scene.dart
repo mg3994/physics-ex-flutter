@@ -49,7 +49,7 @@ class _LaserCutterSceneState extends State<LaserCutterScene> with SingleTickerPr
   void _spawnRandomBlock([Vector2D? customPos]) {
     final rand = math.Random();
     TetrisType type = TetrisType.values[rand.nextInt(TetrisType.values.length)];
-    Vector2D spawnPos = customPos ?? Vector2D(engine.boundsWidth * 0.35 + rand.nextDouble() * (engine.boundsWidth * 0.3), 30.0);
+    Vector2D spawnPos = customPos ?? Vector2D(VoxelPhysicsEngine.virtualWidth * 0.35 + rand.nextDouble() * (VoxelPhysicsEngine.virtualWidth * 0.3), 50.0);
     engine.spawnTetrisBlock(type, spawnPos);
   }
 
@@ -64,14 +64,11 @@ class _LaserCutterSceneState extends State<LaserCutterScene> with SingleTickerPr
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        engine.boundsWidth = constraints.maxWidth;
-        engine.boundsHeight = constraints.maxHeight;
-
-        double laserY = constraints.maxHeight * laserYPercent;
+        double laserY = VoxelPhysicsEngine.virtualHeight * laserYPercent;
         engine.lasers = [
           Laser(
             start: Vector2D(20, laserY),
-            end: Vector2D(constraints.maxWidth - 20, laserY),
+            end: Vector2D(VoxelPhysicsEngine.virtualWidth - 20, laserY),
             color: const Color(0xFFFF0055),
             isActive: laserActive,
           ),
@@ -79,7 +76,9 @@ class _LaserCutterSceneState extends State<LaserCutterScene> with SingleTickerPr
 
         return GestureDetector(
           onTapDown: (details) {
-            _spawnRandomBlock(Vector2D(details.localPosition.dx, details.localPosition.dy));
+            double vx = details.localPosition.dx * (VoxelPhysicsEngine.virtualWidth / constraints.maxWidth);
+            double vy = details.localPosition.dy * (VoxelPhysicsEngine.virtualHeight / constraints.maxHeight);
+            _spawnRandomBlock(Vector2D(vx, vy));
           },
           child: Stack(
             children: [

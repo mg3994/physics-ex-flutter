@@ -38,10 +38,10 @@ class _HydraulicsSceneState extends State<HydraulicsScene> with SingleTickerProv
 
   void _spawnFluidStream() {
     final rand = math.Random();
-    double px = engine.boundsWidth * 0.45 + (rand.nextDouble() - 0.5) * 40.0;
+    double px = VoxelPhysicsEngine.virtualWidth * 0.45 + (rand.nextDouble() - 0.5) * 50.0;
     engine.freeVoxels.add(Voxel(
       position: Vector2D(px, 10.0),
-      velocity: Vector2D((rand.nextDouble() - 0.5) * 30.0, 150.0 + rand.nextDouble() * 50.0),
+      velocity: Vector2D((rand.nextDouble() - 0.5) * 30.0, 180.0 + rand.nextDouble() * 60.0),
       color: Color.lerp(const Color(0xFF00F0FF), const Color(0xFF0066FF), rand.nextDouble())!,
       radius: 3.0,
       blockId: 0,
@@ -69,21 +69,16 @@ class _HydraulicsSceneState extends State<HydraulicsScene> with SingleTickerProv
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        engine.boundsWidth = constraints.maxWidth;
-        engine.boundsHeight = constraints.maxHeight;
-
-        double centerX = constraints.maxWidth / 2;
-        double centerY = constraints.maxHeight * 0.50;
+        double centerX = VoxelPhysicsEngine.virtualWidth / 2;
+        double centerY = VoxelPhysicsEngine.virtualHeight * 0.50;
         if (engine.gears.isEmpty) {
           engine.gears.add(Gear(
             center: Vector2D(centerX, centerY),
-            radius: 55,
+            radius: 65,
             teethCount: 12,
             rotationSpeed: gearSpeed,
             clockwise: true,
           ));
-        } else {
-          engine.gears[0].center = Vector2D(centerX, centerY);
         }
 
         return Stack(
@@ -124,7 +119,7 @@ class _HydraulicsSceneState extends State<HydraulicsScene> with SingleTickerProv
                 },
                 onSpawnBlock: () {
                   TetrisType type = TetrisType.values[math.Random().nextInt(TetrisType.values.length)];
-                  engine.spawnTetrisBlock(type, Vector2D(constraints.maxWidth / 2, 40.0));
+                  engine.spawnTetrisBlock(type, Vector2D(VoxelPhysicsEngine.virtualWidth / 2, 50.0));
                 },
                 onClearAll: () => setState(() => engine.clearAll()),
                 onTogglePause: () => setState(() => isPaused = !isPaused),

@@ -6,6 +6,10 @@ import 'molecular_sandbox_scene.dart';
 import 'black_hole_scene.dart';
 import 'hydraulics_scene.dart';
 import 'supernova_scene.dart';
+import 'cloth_rope_scene.dart';
+import 'double_pendulum_scene.dart';
+import 'pachinko_scene.dart';
+import 'soft_body_scene.dart';
 
 class SceneContainer extends StatefulWidget {
   const SceneContainer({super.key});
@@ -67,6 +71,34 @@ class _SceneContainerState extends State<SceneContainer> {
       'widget': const SupernovaScene(),
       'color': Colors.amberAccent,
     },
+    {
+      'title': 'Verlet Cloth & Rope Mesh',
+      'subtitle': 'Interactive cloth grid responding to gravity, wind, and drag forces',
+      'icon': Icons.grid_on_rounded,
+      'widget': const ClothRopeScene(),
+      'color': Colors.greenAccent,
+    },
+    {
+      'title': 'Chaotic Double Pendulum',
+      'subtitle': 'Non-linear double pendulum trajectory tracing real-time chaos',
+      'icon': Icons.timeline_rounded,
+      'widget': const DoublePendulumScene(),
+      'color': Colors.pink,
+    },
+    {
+      'title': 'Octagon Pachinko & Bouncing Balls',
+      'subtitle': 'Spinning polygon container with hundreds of colliding spheres',
+      'icon': Icons.casino_rounded,
+      'widget': const PachinkoScene(),
+      'color': Colors.amber,
+    },
+    {
+      'title': 'Soft Body Jelly Wobble',
+      'subtitle': 'Mass-spring-damper jelly mesh wobbling and deforming interactively',
+      'icon': Icons.blur_on_rounded,
+      'widget': const SoftBodyScene(),
+      'color': Colors.deepPink,
+    },
   ];
 
   @override
@@ -122,7 +154,7 @@ class _SceneContainerState extends State<SceneContainer> {
                       style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
                     ),
                     Text(
-                      '7 Particle Physics Simulations',
+                      '11 Physics Simulation Modes',
                       style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 11),
                     ),
                   ],

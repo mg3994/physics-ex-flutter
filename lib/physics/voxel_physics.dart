@@ -145,25 +145,26 @@ class Laser {
 }
 
 class VoxelPhysicsEngine {
-  Vector2D gravity;
-  double boundsWidth;
-  double boundsHeight;
+  static const double virtualWidth = 800.0;
+  static const double virtualHeight = 1000.0;
 
+  Vector2D gravity;
   List<VoxelBlock> blocks = [];
   List<Voxel> freeVoxels = [];
   List<Gear> gears = [];
   List<Laser> lasers = [];
 
   Vector2D? blackHoleCenter;
-  double blackHoleMass = 150000.0;
+  double blackHoleMass = 180000.0;
 
   int _nextBlockId = 1;
 
   VoxelPhysicsEngine({
     Vector2D? gravity,
-    this.boundsWidth = 600,
-    this.boundsHeight = 800,
-  }) : gravity = gravity ?? Vector2D(0, 400.0);
+  }) : gravity = gravity ?? Vector2D(0, 450.0);
+
+  double get boundsWidth => virtualWidth;
+  double get boundsHeight => virtualHeight;
 
   void update(double dt) {
     if (dt <= 0) return;
@@ -176,14 +177,13 @@ class VoxelPhysicsEngine {
     _processLaserSlicing();
     _processGearShredding();
 
-    // Black hole gravitational forces
     if (blackHoleCenter != null) {
       _applyBlackHoleForces(dt);
     }
 
     for (int i = blocks.length - 1; i >= 0; i--) {
       var block = blocks[i];
-      block.update(dt, gravity, boundsWidth, boundsHeight);
+      block.update(dt, gravity, virtualWidth, virtualHeight);
 
       if (block.voxels.every((v) => v.isFree)) {
         blocks.removeAt(i);
@@ -191,7 +191,7 @@ class VoxelPhysicsEngine {
     }
 
     for (int i = freeVoxels.length - 1; i >= 0; i--) {
-      freeVoxels[i].update(dt, gravity, boundsWidth, boundsHeight);
+      freeVoxels[i].update(dt, gravity, virtualWidth, virtualHeight);
     }
 
     if (freeVoxels.length > 800) {
@@ -203,7 +203,7 @@ class VoxelPhysicsEngine {
     final bh = blackHoleCenter!;
     for (var p in freeVoxels) {
       double dist = p.position.distanceTo(bh);
-      if (dist > 5.0 && dist < 350.0) {
+      if (dist > 5.0 && dist < 450.0) {
         Vector2D dir = (bh - p.position).normalized();
         Vector2D orbital = Vector2D(-dir.y, dir.x);
         double force = blackHoleMass / (dist * dist);
@@ -216,11 +216,11 @@ class VoxelPhysicsEngine {
     final rand = math.Random();
     for (var v in freeVoxels) {
       double dist = v.position.distanceTo(center);
-      if (dist < 220.0) {
+      if (dist < 280.0) {
         Vector2D dir = dist == 0
             ? Vector2D((rand.nextDouble() - 0.5), (rand.nextDouble() - 0.5)).normalized()
             : (v.position - center).normalized();
-        double pForce = (220.0 - dist) * forceStrength;
+        double pForce = (280.0 - dist) * forceStrength;
         v.velocity += dir * pForce;
       }
     }
@@ -282,7 +282,7 @@ class VoxelPhysicsEngine {
     }
 
     int blockId = _nextBlockId++;
-    double voxelSize = 8.0;
+    double voxelSize = 10.0;
     List<Voxel> voxels = [];
 
     int rows = grid.length;
@@ -293,14 +293,14 @@ class VoxelPhysicsEngine {
     for (int r = 0; r < rows; r++) {
       for (int c = 0; c < cols; c++) {
         if (grid[r][c] == 1) {
-          for (double vx = 0; vx < voxelSize; vx += 3.5) {
-            for (double vy = 0; vy < voxelSize; vy += 3.5) {
+          for (double vx = 0; vx < voxelSize; vx += 4.0) {
+            for (double vy = 0; vy < voxelSize; vy += 4.0) {
               Vector2D localPos = Vector2D(c * voxelSize + vx - centerOffX, r * voxelSize + vy - centerOffY);
               voxels.add(Voxel(
                 position: spawnPos + localPos,
                 velocity: Vector2D.zero(),
                 color: color,
-                radius: 2.0,
+                radius: 2.5,
                 blockId: blockId,
                 localOffset: localPos,
               ));
@@ -313,7 +313,7 @@ class VoxelPhysicsEngine {
     blocks.add(VoxelBlock(
       id: blockId,
       position: spawnPos,
-      velocity: Vector2D(0, 50.0),
+      velocity: Vector2D(0, 60.0),
       color: color,
       shapeType: type,
       voxels: voxels,
@@ -328,10 +328,10 @@ class VoxelPhysicsEngine {
 
       for (var block in blocks) {
         for (var voxel in block.voxels) {
-          if (!voxel.isFree && laser.cutsPoint(voxel.position, 6.0)) {
+          if (!voxel.isFree && laser.cutsPoint(voxel.position, 8.0)) {
             voxel.isFree = true;
             double side = (rand.nextDouble() > 0.5) ? 1.0 : -1.0;
-            voxel.velocity = Vector2D(side * (60.0 + rand.nextDouble() * 100.0), -30.0 - rand.nextDouble() * 50.0);
+            voxel.velocity = Vector2D(side * (70.0 + rand.nextDouble() * 120.0), -40.0 - rand.nextDouble() * 60.0);
             freeVoxels.add(voxel);
           }
         }
@@ -344,14 +344,14 @@ class VoxelPhysicsEngine {
     for (var gear in gears) {
       for (var block in blocks) {
         for (var voxel in block.voxels) {
-          if (!voxel.isFree && voxel.position.distanceTo(gear.center) < gear.radius + 8.0) {
+          if (!voxel.isFree && voxel.position.distanceTo(gear.center) < gear.radius + 12.0) {
             voxel.isFree = true;
             Vector2D dirToCenter = (gear.center - voxel.position).normalized();
             Vector2D tangential = gear.clockwise
                 ? Vector2D(-dirToCenter.y, dirToCenter.x)
                 : Vector2D(dirToCenter.y, dirToCenter.x);
 
-            voxel.velocity = tangential * (gear.rotationSpeed * 25.0) + Vector2D((rand.nextDouble() - 0.5) * 60, 120.0 + rand.nextDouble() * 100);
+            voxel.velocity = tangential * (gear.rotationSpeed * 30.0) + Vector2D((rand.nextDouble() - 0.5) * 80, 150.0 + rand.nextDouble() * 120);
             freeVoxels.add(voxel);
           }
         }

@@ -30,11 +30,31 @@ class _TetrisShredderSceneState extends State<TetrisShredderScene> with SingleTi
       ..repeat();
     _ticker.addListener(_onTick);
 
+    _setupSceneGears();
+
     _autoSpawnTimer = Timer.periodic(const Duration(milliseconds: 1200), (_) {
       if (autoSpawn && !isPaused) {
         _spawnRandomBlock();
       }
     });
+  }
+
+  void _setupSceneGears() {
+    engine.gears.clear();
+    engine.gears.add(Gear(
+      center: Vector2D(VoxelPhysicsEngine.virtualWidth / 2 - 75, VoxelPhysicsEngine.virtualHeight * 0.52),
+      radius: 65,
+      teethCount: 10,
+      rotationSpeed: gearSpeed,
+      clockwise: true,
+    ));
+    engine.gears.add(Gear(
+      center: Vector2D(VoxelPhysicsEngine.virtualWidth / 2 + 75, VoxelPhysicsEngine.virtualHeight * 0.52),
+      radius: 65,
+      teethCount: 10,
+      rotationSpeed: gearSpeed,
+      clockwise: false,
+    ));
   }
 
   void _onTick() {
@@ -48,7 +68,7 @@ class _TetrisShredderSceneState extends State<TetrisShredderScene> with SingleTi
   void _spawnRandomBlock([Vector2D? customPos]) {
     final rand = math.Random();
     TetrisType type = TetrisType.values[rand.nextInt(TetrisType.values.length)];
-    Vector2D spawnPos = customPos ?? Vector2D(engine.boundsWidth * 0.35 + rand.nextDouble() * (engine.boundsWidth * 0.3), 30.0);
+    Vector2D spawnPos = customPos ?? Vector2D(VoxelPhysicsEngine.virtualWidth * 0.35 + rand.nextDouble() * (VoxelPhysicsEngine.virtualWidth * 0.3), 50.0);
     engine.spawnTetrisBlock(type, spawnPos);
   }
 
@@ -63,34 +83,11 @@ class _TetrisShredderSceneState extends State<TetrisShredderScene> with SingleTi
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        engine.boundsWidth = constraints.maxWidth;
-        engine.boundsHeight = constraints.maxHeight;
-
-        double centerX = constraints.maxWidth / 2;
-        double centerY = constraints.maxHeight * 0.52;
-        if (engine.gears.isEmpty) {
-          engine.gears.add(Gear(
-            center: Vector2D(centerX - 55, centerY),
-            radius: 50,
-            teethCount: 10,
-            rotationSpeed: gearSpeed,
-            clockwise: true,
-          ));
-          engine.gears.add(Gear(
-            center: Vector2D(centerX + 55, centerY),
-            radius: 50,
-            teethCount: 10,
-            rotationSpeed: gearSpeed,
-            clockwise: false,
-          ));
-        } else {
-          engine.gears[0].center = Vector2D(centerX - 55, centerY);
-          engine.gears[1].center = Vector2D(centerX + 55, centerY);
-        }
-
         return GestureDetector(
           onTapDown: (details) {
-            _spawnRandomBlock(Vector2D(details.localPosition.dx, details.localPosition.dy));
+            double vx = details.localPosition.dx * (VoxelPhysicsEngine.virtualWidth / constraints.maxWidth);
+            double vy = details.localPosition.dy * (VoxelPhysicsEngine.virtualHeight / constraints.maxHeight);
+            _spawnRandomBlock(Vector2D(vx, vy));
           },
           child: Stack(
             children: [
