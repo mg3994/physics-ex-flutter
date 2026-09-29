@@ -10,22 +10,22 @@ class VoxelPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    // 1. Draw Funnel Hopper Walls
     _drawHopperContainer(canvas, size);
 
-    // 2. Draw Shredder Gears
+    if (engine.blackHoleCenter != null) {
+      _drawBlackHole(canvas, engine.blackHoleCenter!);
+    }
+
     for (var gear in engine.gears) {
       _drawGear(canvas, gear);
     }
 
-    // 3. Draw Laser Line
     for (var laser in engine.lasers) {
       if (laser.isActive) {
         _drawLaser(canvas, laser);
       }
     }
 
-    // 4. Draw Voxel Blocks
     for (var block in engine.blocks) {
       for (var v in block.voxels) {
         if (!v.isFree) {
@@ -44,13 +44,37 @@ class VoxelPainter extends CustomPainter {
       }
     }
 
-    // 5. Draw Free Voxel Particle Stream
     for (var v in engine.freeVoxels) {
       final pPaint = Paint()
         ..color = v.color.withOpacity(0.9)
         ..style = PaintingStyle.fill;
       canvas.drawCircle(Offset(v.position.x, v.position.y), v.radius, pPaint);
     }
+  }
+
+  void _drawBlackHole(Canvas canvas, Vector2D centerPos) {
+    final center = Offset(centerPos.x, centerPos.y);
+
+    final Paint glowPaint = Paint()
+      ..shader = RadialGradient(
+        colors: [
+          const Color(0xFF00F0FF).withOpacity(0.8),
+          const Color(0xFF9D00FF).withOpacity(0.4),
+          Colors.transparent,
+        ],
+      ).createShader(Rect.fromCircle(center: center, radius: 80.0));
+    canvas.drawCircle(center, 80.0, glowPaint);
+
+    final Paint bhBody = Paint()
+      ..color = Colors.black
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(center, 22.0, bhBody);
+
+    final Paint bhRing = Paint()
+      ..color = Colors.cyanAccent
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.0;
+    canvas.drawCircle(center, 22.0, bhRing);
   }
 
   void _drawHopperContainer(Canvas canvas, Size size) {
@@ -60,12 +84,10 @@ class VoxelPainter extends CustomPainter {
       ..strokeWidth = 6.0;
 
     final path = Path();
-    // Left hopper funnel
     path.moveTo(0, size.height * 0.1);
     path.lineTo(size.width * 0.2, size.height * 0.45);
     path.lineTo(size.width * 0.2, size.height);
 
-    // Right hopper funnel
     path.moveTo(size.width, size.height * 0.1);
     path.lineTo(size.width * 0.8, size.height * 0.45);
     path.lineTo(size.width * 0.8, size.height);
@@ -105,7 +127,6 @@ class VoxelPainter extends CustomPainter {
       canvas.drawPath(path, toothPaint);
     }
 
-    // Gear shaft
     canvas.drawCircle(center, gear.radius * 0.3, Paint()..color = const Color(0xFF0F172A));
   }
 
@@ -113,7 +134,6 @@ class VoxelPainter extends CustomPainter {
     final start = Offset(laser.start.x, laser.start.y);
     final end = Offset(laser.end.x, laser.end.y);
 
-    // Laser Glow
     final Paint glow = Paint()
       ..color = laser.color.withOpacity(0.5)
       ..strokeWidth = 10.0
@@ -121,7 +141,6 @@ class VoxelPainter extends CustomPainter {
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6.0);
     canvas.drawLine(start, end, glow);
 
-    // Core Laser Beam
     final Paint core = Paint()
       ..color = Colors.white
       ..strokeWidth = 3.0

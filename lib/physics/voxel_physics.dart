@@ -9,9 +9,9 @@ class Voxel {
   Vector2D velocity;
   Color color;
   double radius;
-  bool isFree; // True when sliced by laser or crushed by gear
+  bool isFree;
   int blockId;
-  Vector2D localOffset; // Relative offset to block center when bound
+  Vector2D localOffset;
 
   Voxel({
     required this.position,
@@ -27,7 +27,6 @@ class Voxel {
     velocity = velocity + gravity * dt;
     position = position + velocity * dt;
 
-    // Boundary bounce
     double pad = radius + 4.0;
     if (position.y > boundsH - pad) {
       position = Vector2D(position.x, boundsH - pad);
@@ -71,7 +70,6 @@ class VoxelBlock {
     angle += angularVelocity * dt;
     angularVelocity *= 0.99;
 
-    // Update bound voxels world positions
     for (var v in voxels) {
       if (!v.isFree) {
         v.position = position + v.localOffset.rotate(angle);
@@ -79,7 +77,6 @@ class VoxelBlock {
       }
     }
 
-    // Wall bounce for block
     double pad = 24.0;
     if (position.y > boundsH - pad) {
       position = Vector2D(position.x, boundsH - pad);
@@ -157,6 +154,9 @@ class VoxelPhysicsEngine {
   List<Gear> gears = [];
   List<Laser> lasers = [];
 
+  Vector2D? blackHoleCenter;
+  double blackHoleMass = 150000.0;
+
   int _nextBlockId = 1;
 
   VoxelPhysicsEngine({
@@ -176,25 +176,53 @@ class VoxelPhysicsEngine {
     _processLaserSlicing();
     _processGearShredding();
 
-    // Update Blocks
+    // Black hole gravitational forces
+    if (blackHoleCenter != null) {
+      _applyBlackHoleForces(dt);
+    }
+
     for (int i = blocks.length - 1; i >= 0; i--) {
       var block = blocks[i];
       block.update(dt, gravity, boundsWidth, boundsHeight);
 
-      // If all voxels freed, remove block
       if (block.voxels.every((v) => v.isFree)) {
         blocks.removeAt(i);
       }
     }
 
-    // Update Free Voxels
     for (int i = freeVoxels.length - 1; i >= 0; i--) {
       freeVoxels[i].update(dt, gravity, boundsWidth, boundsHeight);
     }
 
-    // Enforce Particle Cap to maintain 60 FPS
     if (freeVoxels.length > 800) {
       freeVoxels.removeRange(0, freeVoxels.length - 800);
+    }
+  }
+
+  void _applyBlackHoleForces(double dt) {
+    final bh = blackHoleCenter!;
+    for (var p in freeVoxels) {
+      double dist = p.position.distanceTo(bh);
+      if (dist > 5.0 && dist < 350.0) {
+        Vector2D dir = (bh - p.position).normalized();
+        Vector2D orbital = Vector2D(-dir.y, dir.x);
+        double force = blackHoleMass / (dist * dist);
+        p.velocity += (dir * force + orbital * (force * 0.4)) * dt;
+      }
+    }
+  }
+
+  void triggerExplosion(Vector2D center, double forceStrength) {
+    final rand = math.Random();
+    for (var v in freeVoxels) {
+      double dist = v.position.distanceTo(center);
+      if (dist < 220.0) {
+        Vector2D dir = dist == 0
+            ? Vector2D((rand.nextDouble() - 0.5), (rand.nextDouble() - 0.5)).normalized()
+            : (v.position - center).normalized();
+        double pForce = (220.0 - dist) * forceStrength;
+        v.velocity += dir * pForce;
+      }
     }
   }
 
@@ -265,7 +293,6 @@ class VoxelPhysicsEngine {
     for (int r = 0; r < rows; r++) {
       for (int c = 0; c < cols; c++) {
         if (grid[r][c] == 1) {
-          // Fill sub-voxels inside each block cell
           for (double vx = 0; vx < voxelSize; vx += 3.5) {
             for (double vy = 0; vy < voxelSize; vy += 3.5) {
               Vector2D localPos = Vector2D(c * voxelSize + vx - centerOffX, r * voxelSize + vy - centerOffY);
@@ -303,7 +330,6 @@ class VoxelPhysicsEngine {
         for (var voxel in block.voxels) {
           if (!voxel.isFree && laser.cutsPoint(voxel.position, 6.0)) {
             voxel.isFree = true;
-            // Impulse blast outward
             double side = (rand.nextDouble() > 0.5) ? 1.0 : -1.0;
             voxel.velocity = Vector2D(side * (60.0 + rand.nextDouble() * 100.0), -30.0 - rand.nextDouble() * 50.0);
             freeVoxels.add(voxel);

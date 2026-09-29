@@ -3,6 +3,9 @@ import 'tetris_shredder_scene.dart';
 import 'laser_cutter_scene.dart';
 import 'lava_melt_scene.dart';
 import 'molecular_sandbox_scene.dart';
+import 'black_hole_scene.dart';
+import 'hydraulics_scene.dart';
+import 'supernova_scene.dart';
 
 class SceneContainer extends StatefulWidget {
   const SceneContainer({super.key});
@@ -17,7 +20,7 @@ class _SceneContainerState extends State<SceneContainer> {
   final List<Map<String, dynamic>> _scenes = [
     {
       'title': 'Tetris Shredder Machine',
-      'subtitle': 'Dual rotating gears grinding Tetris shapes into fragment debris',
+      'subtitle': 'Dual rotating gears grinding Tetris shapes into voxel debris',
       'icon': Icons.settings_brightness_rounded,
       'widget': const TetrisShredderScene(),
       'color': Colors.cyanAccent,
@@ -43,6 +46,27 @@ class _SceneContainerState extends State<SceneContainer> {
       'widget': const MolecularSandboxScene(),
       'color': Colors.purpleAccent,
     },
+    {
+      'title': 'Black Hole Singularity',
+      'subtitle': 'Gravitational attractor bending particle trajectories into accretion spirals',
+      'icon': Icons.brightness_3_rounded,
+      'widget': const BlackHoleScene(),
+      'color': Colors.cyan,
+    },
+    {
+      'title': 'Fluid Hydraulics & Waterwheel',
+      'subtitle': 'Viscous fluid particle streams flowing through obstacles and rotating paddles',
+      'icon': Icons.water_drop_rounded,
+      'widget': const HydraulicsScene(),
+      'color': Colors.blueAccent,
+    },
+    {
+      'title': 'Cosmic Supernova Explosion',
+      'subtitle': 'High-energy particle shockwaves and starlight particle interactions',
+      'icon': Icons.wb_sunny_rounded,
+      'widget': const SupernovaScene(),
+      'color': Colors.amberAccent,
+    },
   ];
 
   @override
@@ -55,9 +79,12 @@ class _SceneContainerState extends State<SceneContainer> {
           children: [
             Icon(currentScene['icon'], color: currentScene['color']),
             const SizedBox(width: 10),
-            Text(
-              currentScene['title'],
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+            Flexible(
+              child: Text(
+                currentScene['title'],
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17),
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
           ],
         ),
@@ -95,7 +122,7 @@ class _SceneContainerState extends State<SceneContainer> {
                       style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
                     ),
                     Text(
-                      'Select Simulation Mode',
+                      '7 Particle Physics Simulations',
                       style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 11),
                     ),
                   ],
