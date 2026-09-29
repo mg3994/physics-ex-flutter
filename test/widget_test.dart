@@ -5,21 +5,20 @@ import 'package:physics_simulations/main.dart';
 void main() {
   testWidgets('App renders SceneContainer and shows Tetris Shredder Machine title', (WidgetTester tester) async {
     await tester.pumpWidget(const LafikobraPhysicsApp());
-    await tester.pumpAndSettle();
+    await tester.pump();
 
     expect(find.text('Tetris Shredder Machine'), findsOneWidget);
   });
 
   testWidgets('End drawer opens and displays scene switching choices', (WidgetTester tester) async {
     await tester.pumpWidget(const LafikobraPhysicsApp());
-    await tester.pumpAndSettle();
+    await tester.pump();
 
-    // Tap on drawer icon button
     final drawerButton = find.byIcon(Icons.grid_view_rounded);
     expect(drawerButton, findsOneWidget);
 
     await tester.tap(drawerButton);
-    await tester.pumpAndSettle();
+    await tester.pump();
 
     expect(find.text('Lafikobra Physics Lab'), findsOneWidget);
     expect(find.text('Laser Cutter Shredder'), findsOneWidget);

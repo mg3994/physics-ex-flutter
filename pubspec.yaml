@@ -1,5 +1,5 @@
 name: physics_simulations
-description: "A new Flutter project for physics simulations inspired by Lafikobra."
+description: "A high performance physics simulation suite inspired by Lafikobra."
 publish_to: 'none'
 version: 1.0.0+1
 
@@ -9,11 +9,6 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  flame: '>=1.8.0 <2.0.0'
-  flame_forge2d: '>=0.14.0 <1.0.0'
-  forge2d: '>=0.11.0 <1.0.0'
-  quiver: '>=3.0.0 <4.0.0'
-  vector_math: ^2.4.3
   cupertino_icons: ^1.0.8
 
 dev_dependencies:
